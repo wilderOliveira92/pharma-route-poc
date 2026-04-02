@@ -10,4 +10,4 @@ services:
       - key: DATABASE_URL
         sync: false   # preencher manualmente no dashboard do Render com a URL do Supabase
       - key: CORS_ORIGINS
-        sync: false   # ex: https://pharma-route.vercel.app
+        value: https://pharma-route-poc.vercel.app
