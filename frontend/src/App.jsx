@@ -47,8 +47,10 @@ export default function App() {
           setRepresentanteId(lista[0].representante_id)
         }
 
-        // Clear selections when changing date
+        // Clear selections, route and map pins when changing date
         setSelecionados(new Set())
+        setRotaSelecionada(null)
+        setSelectedVisitaId(null)
       } catch (e) {
         console.error('Erro ao carregar médicos:', e)
         setErro('Erro ao carregar médicos. Verifique se o backend está rodando.')

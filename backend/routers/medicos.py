@@ -9,7 +9,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
-from sqlalchemy import select
+from sqlalchemy import select, exists
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -45,34 +45,24 @@ def listar_medicos(
     if rep_id:
         stmt = stmt.where(Medico.representante_id == rep_id)
 
-    medicos = db.execute(stmt).scalars().all()
-
-    # Filter by availability on specific date
     if data:
         try:
             target_date = datetime.datetime.strptime(data, "%Y-%m-%d").date()
             dia_semana = target_date.weekday()  # 0=Monday, 6=Sunday
-
-            # Keep only medicos that have availability on this weekday
-            medicos_filtrados = []
-            for medico in medicos:
-                # Check if medico has any local with availability on this day
-                stmt_disp = select(Disponibilidade).join(
-                    LocalAtendimento,
-                    Disponibilidade.local_id == LocalAtendimento.id
-                ).where(
-                    LocalAtendimento.medico_id == medico.id,
-                    Disponibilidade.dia_semana == dia_semana
+            stmt = stmt.where(
+                exists(
+                    select(Disponibilidade.id)
+                    .join(LocalAtendimento, Disponibilidade.local_id == LocalAtendimento.id)
+                    .where(
+                        LocalAtendimento.medico_id == Medico.id,
+                        Disponibilidade.dia_semana == dia_semana,
+                    )
                 )
-                if db.execute(stmt_disp).scalars().first():
-                    medicos_filtrados.append(medico)
-
-            medicos = medicos_filtrados
+            )
         except ValueError:
-            # Invalid date format, ignore filter
             pass
 
-    return medicos
+    return db.execute(stmt).scalars().all()
 
 
 @router.post("", response_model=MedicoResponse, status_code=201)
